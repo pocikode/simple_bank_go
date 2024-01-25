@@ -5,12 +5,14 @@ import (
 )
 
 type Application struct {
-	DB *db.Store
+	DB  *db.Store
+	Env *Env
 }
 
 func App() *Application {
 	app := Application{}
-	app.DB = NewDatabase()
+	app.Env = NewEnv()
+	app.DB = NewDatabase(app.Env)
 
 	return &app
 }

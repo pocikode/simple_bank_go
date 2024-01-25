@@ -2,17 +2,23 @@ package bootstrap
 
 import (
 	"database/sql"
+	"fmt"
 	_ "github.com/lib/pq"
 	db "github.com/pocikode/simple_bank_go/db/sqlc"
 	"log"
 )
 
-const (
-	dbDriver = "postgres"
-	dbSource = "postgresql://default:secret@127.0.0.1:5432/simple_bank?sslmode=disable"
-)
+func NewDatabase(env *Env) *db.Store {
+	dbDriver := "postgres"
+	dbSource := fmt.Sprintf(
+		"postgresql://%s:%s@%s:%s/%s?sslmode=disable",
+		env.DBUser,
+		env.DBPass,
+		env.DBHost,
+		env.DBPort,
+		env.DBName,
+	)
 
-func NewDatabase() *db.Store {
 	conn, err := sql.Open(dbDriver, dbSource)
 	if err != nil {
 		log.Fatal("cannot connect to db:", err)
