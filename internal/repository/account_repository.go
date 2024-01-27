@@ -6,10 +6,10 @@ import (
 )
 
 type AccountRepository struct {
-	db *db.Store
+	db db.Store
 }
 
-func NewAccountRepository(db *db.Store) *AccountRepository {
+func NewAccountRepository(db db.Store) *AccountRepository {
 	return &AccountRepository{db: db}
 }
 

@@ -5,7 +5,7 @@ import (
 )
 
 type Application struct {
-	DB  *db.Store
+	DB  db.Store
 	Env *Env
 }
 

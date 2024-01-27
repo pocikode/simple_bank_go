@@ -8,7 +8,7 @@ import (
 	"log"
 )
 
-func NewDatabase(env *Env) *db.Store {
+func NewDatabase(env *Env) db.Store {
 	dbDriver := "postgres"
 	dbSource := fmt.Sprintf(
 		"postgresql://%s:%s@%s:%s/%s?sslmode=disable",

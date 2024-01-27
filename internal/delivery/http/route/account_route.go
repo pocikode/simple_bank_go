@@ -8,7 +8,7 @@ import (
 	"github.com/pocikode/simple_bank_go/internal/usecase"
 )
 
-func NewAccountRouter(db *db.Store, gin *gin.Engine) {
+func NewAccountRouter(db db.Store, gin *gin.Engine) {
 	ar := repository.NewAccountRepository(db)
 	auc := usecase.NewAccountUseCase(ar)
 	ac := http.NewAccountController(auc)
