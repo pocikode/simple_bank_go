@@ -10,4 +10,7 @@ sqlc:
 mock:
 	mockgen -package mockdb -destination db/mock/store.go github.com/pocikode/simple_bank_go/db/sqlc Store
 
-.PHONY: migrateup migratedown sqlc mock
+test:
+	go test -v -cover ./...
+
+.PHONY: migrateup migratedown sqlc mock test
