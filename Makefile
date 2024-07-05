@@ -4,4 +4,7 @@ migrateup:
 migratedown:
 	migrate -path db/migration -database "postgresql://default:secret@localhost:5432/simple_bank?sslmode=disable" -verbose down
 
-.PHONY: migrateup migratedown	
+test:
+	go test -v -cover ./...
+
+.PHONY: migrateup migratedown test
