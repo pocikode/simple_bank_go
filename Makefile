@@ -10,4 +10,7 @@ test:
 server:
 	go run main.go
 
-.PHONY: migrateup migratedown test server
+mock:
+	mockgen -destination db/mock/store.go -package mockdb pocikode/simple-bank/db/sqlc Store
+
+.PHONY: migrateup migratedown test server mock
