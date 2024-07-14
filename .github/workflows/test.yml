@@ -42,6 +42,9 @@ jobs:
         sudo mv migrate /usr/bin/migrate
         which migrate
 
+    - name: Copy app.env.example to app.env
+      run: cp app.env.example app.env
+
     - name: Run migration
       run: make migrateup
 
