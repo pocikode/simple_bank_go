@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
+	"github.com/hibiken/asynq"
 	"github.com/rakyll/statik/fs"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
@@ -20,6 +21,7 @@ import (
 	"pocikode/simple-bank/gapi"
 	"pocikode/simple-bank/pb"
 	"pocikode/simple-bank/util"
+	"pocikode/simple-bank/worker"
 
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -45,8 +47,15 @@ func main() {
 	runMigration(config.MigrationURL, config.DBSource)
 	store := db.NewStore(conn)
 
-	go runGatewayServer(config, store)
-	runGrpcServer(config, store)
+	redisOpt := asynq.RedisClientOpt{
+		Addr: config.RedisAddress,
+	}
+
+	taskDistributor := worker.NewRedisTaskDistributor(redisOpt)
+
+	go runTaskProcessor(redisOpt, store)
+	go runGatewayServer(config, store, taskDistributor)
+	runGrpcServer(config, store, taskDistributor)
 }
 
 func runMigration(migrationUrl, dbSource string) {
@@ -62,8 +71,17 @@ func runMigration(migrationUrl, dbSource string) {
 	log.Info().Msg("db migrated successfully")
 }
 
-func runGrpcServer(config util.Config, store db.Store) {
-	server, err := gapi.NewServer(config, store)
+func runTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store) {
+	taskProcessor := worker.NewRedisTaskProcessor(redisOpt, store)
+	log.Info().Msg("starting task processor")
+	err := taskProcessor.Start()
+	if err != nil {
+		log.Fatal().Err(err).Msg("failed to start task processor")
+	}
+}
+
+func runGrpcServer(config util.Config, store db.Store, taskDistributor worker.TaskDistributor) {
+	server, err := gapi.NewServer(config, store, taskDistributor)
 	if err != nil {
 		log.Fatal().Msgf("cannot start server: %s", err)
 	}
@@ -78,7 +96,7 @@ func runGrpcServer(config util.Config, store db.Store) {
 		log.Fatal().Msgf("cannot create listener: %s", err)
 	}
 
-	log.Printf("gRPC server listening on %s", listener.Addr().String())
+	log.Info().Msgf("gRPC server listening on %s", listener.Addr().String())
 
 	err = grpcServer.Serve(listener)
 	if err != nil {
@@ -86,8 +104,8 @@ func runGrpcServer(config util.Config, store db.Store) {
 	}
 }
 
-func runGatewayServer(config util.Config, store db.Store) {
-	server, err := gapi.NewServer(config, store)
+func runGatewayServer(config util.Config, store db.Store, taskDistributor worker.TaskDistributor) {
+	server, err := gapi.NewServer(config, store, taskDistributor)
 	if err != nil {
 		log.Fatal().Msgf("cannot start server: %s", err)
 	}
@@ -127,7 +145,7 @@ func runGatewayServer(config util.Config, store db.Store) {
 		log.Fatal().Msgf("cannot create listener: %s", err)
 	}
 
-	log.Printf("HTTP server listening on %s", listener.Addr().String())
+	log.Info().Msgf("HTTP server listening on %s", listener.Addr().String())
 
 	handler := gapi.HttpLogger(mux)
 	err = http.Serve(listener, handler)
