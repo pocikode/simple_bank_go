@@ -3,6 +3,8 @@ package main
 import (
 	"context"
 	"database/sql"
+	"errors"
+	"github.com/golang-migrate/migrate/v4"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"github.com/rakyll/statik/fs"
 	"google.golang.org/grpc"
@@ -17,6 +19,8 @@ import (
 	"pocikode/simple-bank/pb"
 	"pocikode/simple-bank/util"
 
+	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
 	_ "pocikode/simple-bank/doc/statik"
 )
@@ -32,10 +36,24 @@ func main() {
 		log.Fatal("cannot connect to db:", err)
 	}
 
+	runMigration(config.MigrationURL, config.DBSource)
 	store := db.NewStore(conn)
 
 	go runGatewayServer(config, store)
 	runGrpcServer(config, store)
+}
+
+func runMigration(migrationUrl, dbSource string) {
+	migration, err := migrate.New(migrationUrl, dbSource)
+	if err != nil {
+		log.Fatal("cannot create migration instance: ", err)
+	}
+
+	if err = migration.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		log.Fatal("cannot run migration: ", err)
+	}
+
+	log.Println("db migrated successfully")
 }
 
 func runGrpcServer(config util.Config, store db.Store) {
