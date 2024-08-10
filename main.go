@@ -82,7 +82,7 @@ func runTaskProcessor(config util.Config, redisOpt asynq.RedisClientOpt, store d
 		config.SMTPPassword,
 	)
 
-	taskProcessor := worker.NewRedisTaskProcessor(redisOpt, store, mailer)
+	taskProcessor := worker.NewRedisTaskProcessor(redisOpt, &config, store, mailer)
 	log.Info().Msg("starting task processor")
 	err := taskProcessor.Start()
 	if err != nil {

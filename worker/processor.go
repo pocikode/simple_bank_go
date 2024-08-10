@@ -6,6 +6,7 @@ import (
 	"github.com/rs/zerolog/log"
 	db "pocikode/simple-bank/db/sqlc"
 	"pocikode/simple-bank/mail"
+	"pocikode/simple-bank/util"
 )
 
 const (
@@ -20,11 +21,12 @@ type TaskProcessor interface {
 
 type RedisTaskProcessor struct {
 	server *asynq.Server
+	config *util.Config
 	store  db.Store
 	mailer mail.EmailSender
 }
 
-func NewRedisTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store, mailer mail.EmailSender) TaskProcessor {
+func NewRedisTaskProcessor(redisOpt asynq.RedisClientOpt, config *util.Config, store db.Store, mailer mail.EmailSender) TaskProcessor {
 	server := asynq.NewServer(
 		redisOpt,
 		asynq.Config{
@@ -42,6 +44,7 @@ func NewRedisTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store, mailer
 
 	return &RedisTaskProcessor{
 		server: server,
+		config: config,
 		store:  store,
 		mailer: mailer,
 	}
