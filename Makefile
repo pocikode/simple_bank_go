@@ -13,7 +13,7 @@ migratedown1:
 	migrate -path db/migration -database "$(DB_URL)" -verbose down 1
 
 test:
-	go test -v -cover ./...
+	go test -v -cover -short ./...
 
 server:
 	go run main.go
