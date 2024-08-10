@@ -12,6 +12,9 @@ migratedown:
 migratedown1:
 	migrate -path db/migration -database "$(DB_URL)" -verbose down 1
 
+new_migration:
+	migrate	create -ext sql -dir db/migration -seq $(name)
+
 test:
 	go test -v -cover -short ./...
 
@@ -41,4 +44,4 @@ proto:
 evans:
 	evans --host localhost --port 8014 -r repl
 
-.PHONY: migrateup migratedown migrateup1 migratedown1 test server mock db_docs db_schema proto evans
+.PHONY: migrateup migratedown migrateup1 migratedown1 new_migration test server mock db_docs db_schema proto evans

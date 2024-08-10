@@ -19,6 +19,7 @@ import (
 	"pocikode/simple-bank/api"
 	db "pocikode/simple-bank/db/sqlc"
 	"pocikode/simple-bank/gapi"
+	"pocikode/simple-bank/mail"
 	"pocikode/simple-bank/pb"
 	"pocikode/simple-bank/util"
 	"pocikode/simple-bank/worker"
@@ -53,7 +54,7 @@ func main() {
 
 	taskDistributor := worker.NewRedisTaskDistributor(redisOpt)
 
-	go runTaskProcessor(redisOpt, store)
+	go runTaskProcessor(config, redisOpt, store)
 	go runGatewayServer(config, store, taskDistributor)
 	runGrpcServer(config, store, taskDistributor)
 }
@@ -71,8 +72,17 @@ func runMigration(migrationUrl, dbSource string) {
 	log.Info().Msg("db migrated successfully")
 }
 
-func runTaskProcessor(redisOpt asynq.RedisClientOpt, store db.Store) {
-	taskProcessor := worker.NewRedisTaskProcessor(redisOpt, store)
+func runTaskProcessor(config util.Config, redisOpt asynq.RedisClientOpt, store db.Store) {
+	mailer := mail.NewEmailSender(
+		config.SMTPSenderName,
+		config.SMTPSenderAddress,
+		config.SMTPHost,
+		config.SMTPPort,
+		config.SMTPUsername,
+		config.SMTPPassword,
+	)
+
+	taskProcessor := worker.NewRedisTaskProcessor(redisOpt, store, mailer)
 	log.Info().Msg("starting task processor")
 	err := taskProcessor.Start()
 	if err != nil {
